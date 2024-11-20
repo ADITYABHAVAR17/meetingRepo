@@ -54,6 +54,7 @@ npm install
 # Run the frontend
 npm start
 ```
+Checkout package.json of Frontend
 
 ## Contributing
 
