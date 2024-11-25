@@ -1,5 +1,5 @@
 /node_modules
 /backend/config/config.env
-
+/backend/node_modules
 # Ignore node_modules in the frontend directory
 /frontend/node_modules

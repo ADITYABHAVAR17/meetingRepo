@@ -1,13 +1,15 @@
-const http = require("http");
 const express = require("express");
-const cors = require("cors");
-const app = require("./app"); // Import Express app
+const http = require("http");
 const { Server } = require("socket.io");
+const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path"); // Import path to handle file paths
+
+const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // Make sure this matches your frontend URL
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
@@ -17,7 +19,10 @@ app.use(express.json());
 
 const rooms = {}; // Store room details and users
 
-// Create a room
+// Serve React build folder
+app.use(express.static(path.join(__dirname, "../frontend/build")));
+
+// API route to create a room
 app.post("/api/rooms", (req, res) => {
   const { roomName } = req.body;
   if (!roomName) {
@@ -33,7 +38,6 @@ app.post("/api/rooms", (req, res) => {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // Join room
   socket.on("joinRoom", ({ roomId, userName }) => {
     if (!rooms[roomId]) {
       socket.emit("error", { message: "Room does not exist" });
@@ -45,29 +49,25 @@ io.on("connection", (socket) => {
 
     console.log(`${userName} joined room: ${roomId}`);
 
-    // Notify others in the room
     socket.to(roomId).emit("userJoined", { userName });
 
-    // Send room welcome message to the new user
     socket.emit("message", {
       userName: "System",
       message: `Welcome to the room, ${userName}!`,
     });
   });
 
-  // Send chat message
   socket.on("chatMessage", ({ roomId, userName, message }) => {
     if (!rooms[roomId]) {
       socket.emit("error", { message: "Room does not exist" });
       return;
     }
 
-    const chatMessage = { userName,message };
-    io.to(roomId).emit("message", chatMessage); // Broadcast to everyone in the room
+    const chatMessage = { userName, message };
+    io.to(roomId).emit("message", chatMessage);
     console.log(`Message from ${userName} in room ${roomId}: ${message}`);
   });
 
-  // Handle user disconnect
   socket.on("disconnect", () => {
     for (const roomId in rooms) {
       const userIndex = rooms[roomId].users.findIndex(
@@ -77,17 +77,22 @@ io.on("connection", (socket) => {
         const userName = rooms[roomId].users[userIndex].userName;
         rooms[roomId].users.splice(userIndex, 1);
 
-        // Notify others in the room
         socket.to(roomId).emit("userLeft", { userName });
         console.log(`${userName} left room: ${roomId}`);
+        break;
       }
     }
     console.log("User disconnected:", socket.id);
   });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
+// Handle React routing
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
+});
+
+// Start server
+const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
