@@ -1,16 +1,33 @@
-const app = require("./app"); // Import app.js
 const http = require("http");
+const express = require("express");
+const cors = require("cors");
+const app = require("./app"); // Import Express app
 const { Server } = require("socket.io");
-
+const { v4: uuidv4 } = require("uuid");
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3000", // Make sure this matches your frontend URL
     methods: ["GET", "POST"],
   },
 });
 
+app.use(cors());
+app.use(express.json());
+
 const rooms = {}; // Store room details and users
+
+// Create a room
+app.post("/api/rooms", (req, res) => {
+  const { roomName } = req.body;
+  if (!roomName) {
+    return res.status(400).json({ message: "Room name is required" });
+  }
+
+  const roomId = uuidv4();
+  rooms[roomId] = { roomName, users: [] };
+  res.status(201).json({ roomId, roomName });
+});
 
 // Socket.io logic
 io.on("connection", (socket) => {
@@ -45,7 +62,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const chatMessage = { userName, message };
+    const chatMessage = { userName,message };
     io.to(roomId).emit("message", chatMessage); // Broadcast to everyone in the room
     console.log(`Message from ${userName} in room ${roomId}: ${message}`);
   });
