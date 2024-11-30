@@ -86,6 +86,7 @@ io.on("connection", (socket) => {
   });
 });
 
+require('./ws/stream')(io);
 // Handle React routing
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));

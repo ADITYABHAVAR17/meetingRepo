@@ -1,69 +1,75 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from "react";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import TextField from "@mui/material/TextField";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import PhoneIcon from "@mui/icons-material/Phone";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
-const VideoControls = () => {
-  const videoRef = useRef(null);
-  const [stream, setStream] = useState(null);
-  const [isVideoOn, setIsVideoOn] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-
-  useEffect(() => {
-    // Access the user's camera and microphone
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((currentStream) => {
-        setStream(currentStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = currentStream;
-        }
-      })
-      .catch((error) => {
-        console.error('Error accessing media devices:', error);
-      });
-
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop()); // Clean up
-      }
-    };
-  }, []);
-
-  const toggleVideo = () => {
-    if (stream) {
-      const videoTrack = stream.getTracks().find((track) => track.kind === 'video');
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOn(videoTrack.enabled);
-      }
-    }
-  };
-
-  const toggleAudio = () => {
-    if (stream) {
-      const audioTrack = stream.getTracks().find((track) => track.kind === 'audio');
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
-    }
-  };
-
+const VideoControls = ({
+  me,
+  name,
+  setName,
+  idToCall,
+  setIdToCall,
+  callAccepted,
+  callEnded,
+  leaveCall,
+  callUser,
+  receivingCall,
+  callerName,
+  answerCall,
+}) => {
   return (
-    <div className="flex flex-col items-center">
-      <video ref={videoRef} autoPlay muted className="w-full h-96 bg-black rounded-lg mb-4"></video>
-      <div className="flex space-x-4">
-        <button
-          onClick={toggleVideo}
-          className={`px-4 py-2 rounded-lg ${isVideoOn ? 'bg-red-500' : 'bg-green-500'} text-white`}
+    <div className="myId">
+      <TextField
+        id="name"
+        label="Name"
+        variant="filled"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={{ marginBottom: "20px" }}
+      />
+      <CopyToClipboard text={me} style={{ marginBottom: "2rem" }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AssignmentIcon fontSize="large" />}
         >
-          {isVideoOn ? 'Turn Off Video' : 'Turn On Video'}
-        </button>
-        <button
-          onClick={toggleAudio}
-          className={`px-4 py-2 rounded-lg ${isMuted ? 'bg-red-500' : 'bg-green-500'} text-white`}
-        >
-          {isMuted ? 'Unmute' : 'Mute'}
-        </button>
+          Copy ID
+        </Button>
+      </CopyToClipboard>
+
+      <TextField
+        id="id-to-call"
+        label="ID to call"
+        variant="filled"
+        value={idToCall}
+        onChange={(e) => setIdToCall(e.target.value)}
+      />
+      <div className="call-button">
+        {callAccepted && !callEnded ? (
+          <Button variant="contained" color="secondary" onClick={leaveCall}>
+            End Call
+          </Button>
+        ) : (
+          <IconButton
+            color="primary"
+            aria-label="call"
+            onClick={() => callUser(idToCall)}
+          >
+            <PhoneIcon fontSize="large" />
+          </IconButton>
+        )}
       </div>
+      {receivingCall && !callAccepted && (
+        <div className="caller">
+          <h1>{callerName} is calling...</h1>
+          <Button variant="contained" color="primary" onClick={answerCall}>
+            Answer
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

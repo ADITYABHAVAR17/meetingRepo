@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Navbar from '../Navbar/Navbar';
-import VideoControls from '../video/VideoControls'; // Import Video Controls
+import VideoControl from '../video/VideoControl'; // Import Video Controls
 
 const ChatRoomPage = () => {
   const { roomId } = useParams();
@@ -103,7 +103,7 @@ const ChatRoomPage = () => {
         )}
         <div className={`p-4 ${showChat ? 'w-2/3' : 'w-full'}`}>
           <h2 className="text-xl font-bold mb-4">Video</h2>
-          <VideoControls /> {/* Render Video Controls */}
+          <VideoControl /> {/* Render Video Controls */}
         </div>
       </div>
     </div>

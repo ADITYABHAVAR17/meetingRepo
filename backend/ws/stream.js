@@ -1,22 +1,37 @@
-module.exports = (socket, io) => {
-    // Join room
-    socket.on("join-room", ({ roomId, userName }) => {
-      console.log(`${userName} joined room: ${roomId}`);
-      socket.join(roomId);
-  
-      // Notify other participants
-      socket.to(roomId).emit("user-joined", { userName, socketId: socket.id });
-  
-      // Handle chat messages
-      socket.on("send-message", ({ message }) => {
-        io.to(roomId).emit("receive-message", { message, userName });
-      });
-  
-      // Handle user disconnect
+// stream.js
+module.exports = (io) => {
+  io.on("connection", (socket) => {
+      socket.emit("me", socket.id)
+      console.log("connected: ", socket.id)
+
       socket.on("disconnect", () => {
-        console.log(`${userName} disconnected from room: ${roomId}`);
-        socket.to(roomId).emit("user-left", { userName });
+          socket.broadcast.emit("callEnded")
+          console.log("disconnected: ", socket.id)
+      })
+
+      socket.on("callUser", (data) => {
+          io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from, name: data.name })
+          console.log(data.signalData)
+      })
+
+      socket.on("answerCall", (data) => {
+          io.to(data.to).emit("callAccepted", data.signal)
+          console.log(data.signal)
+      })
+      socket.on("joinRoom", ({ roomId, userName }) => {
+        if (!rooms[roomId]) {
+          socket.emit("error", { message: "Room does not exist" });
+          return;
+        }
+      
+        socket.join(roomId);
+        rooms[roomId].users.push({ id: socket.id, userName });
+      
+        // Notify other users about the new user
+        socket.to(roomId).emit("newUser", { id: socket.id, userName });
+      
+        console.log(`${userName} joined room: ${roomId}`);
       });
-    });
-  };
-  
+      
+  });
+};
